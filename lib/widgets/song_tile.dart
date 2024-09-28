@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
+import 'package:sangeetha_potha_app_flutter/utils/app_components.dart';
 
-class SongTile extends StatelessWidget {
+class SongTile extends StatefulWidget {
   final String avatarUrl;
   final String title;
   final String subtitle;
@@ -17,20 +19,31 @@ class SongTile extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _SongTileState createState() => _SongTileState();
+}
+
+class _SongTileState extends State<SongTile> {
+  bool isFavorited = false;
+
+  void _toggleFavorite() {
+    setState(() {
+      isFavorited = !isFavorited;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(8),
         splashColor: AppColors.accentColorDark.withOpacity(0.2),
         highlightColor: AppColors.accentColorDark.withOpacity(0.1),
         child: Container(
-          padding: const EdgeInsets.only(
-            top: 16.0,
-            bottom: 16.0,
-            left: 20.0,
-            right: 20.0,
+          padding: const EdgeInsets.symmetric(
+            vertical: 16.0,
+            horizontal: 20.0,
           ),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.2),
@@ -42,7 +55,7 @@ class SongTile extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
-                  avatarUrl,
+                  widget.avatarUrl,
                   width: 70,
                   height: 70,
                   fit: BoxFit.cover,
@@ -63,11 +76,11 @@ class SongTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      widget.title,
                       style: GoogleFonts.getFont(
                         'Poppins',
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -75,7 +88,7 @@ class SongTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      subtitle,
+                      widget.subtitle,
                       style: GoogleFonts.montserrat(
                         color: Colors.white,
                         fontSize: 16,
@@ -84,6 +97,18 @@ class SongTile extends StatelessWidget {
                       maxLines: 1,
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Heart Icon (Toggles between selected and unselected)
+              GestureDetector(
+                onTap: _toggleFavorite,
+                child: SvgPicture.asset(
+                  isFavorited
+                      ? AppComponents.heartSelect
+                      : AppComponents.heartUnselect,
+                  width: 30,
+                  height: 30,
                 ),
               ),
             ],
