@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
+import '../utils/app_components.dart';
+
 class SplashScreen extends StatelessWidget {
   final double _kSize = 50.0;
 
-  SplashScreen({super.key});
+  const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +18,7 @@ class SplashScreen extends StatelessWidget {
         children: [
           // Background Image
           Image.asset(
-            'assets/images/full_background.png',
+            AppComponents.background,
             fit: BoxFit.cover,
           ),
 
@@ -27,7 +29,7 @@ class SplashScreen extends StatelessWidget {
               children: [
                 // Centered Logo
                 SvgPicture.asset(
-                  'assets/images/logo.svg',
+                  AppComponents.logo,
                   height: 100,
                   width: 100,
                 ),
