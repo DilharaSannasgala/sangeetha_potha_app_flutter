@@ -10,4 +10,6 @@ class AppComponents {
  //_______icons
  static const String dropDownIcon = '${iconPath}drop_down.svg';
  static const String tickIcon = '${iconPath}tick.svg';
+ static const String heartUnselect = '${iconPath}heart_unselected.svg';
+ static const String heartSelect = '${iconPath}heart_selected.svg';
 }
