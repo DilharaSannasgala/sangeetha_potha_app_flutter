@@ -6,6 +6,7 @@ class AppComponents {
   static const String logo = '${imagePath}logo.svg';
   static const String background = '${imagePath}full_background.png';
   static const String glassContainer = '${imagePath}glass_container.svg';
+  static const String banner = '${imagePath}banner.png';
 
  //_______icons
  static const String dropDownIcon = '${iconPath}drop_down.svg';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sangeetha_potha_app_flutter/screens/artist_list.dart';
+import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
 import 'package:sangeetha_potha_app_flutter/screens/language_select_screen.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_list.dart';
 import 'package:sangeetha_potha_app_flutter/screens/splash_screen.dart';
@@ -14,7 +15,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: SongList(),
+      home: HomeScreen(),
     );
   }
 }
