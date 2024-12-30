@@ -23,6 +23,8 @@ class SongScreen extends StatefulWidget {
 }
 
 class _SongScreenState extends State<SongScreen> {
+  double _fontSize = 16.0;
+  bool _showAdjustableBar = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,31 +47,25 @@ class _SongScreenState extends State<SongScreen> {
               fit: BoxFit.cover,
             ),
           ),
+          // Animated App Bar
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-              title: Row(
-                children: [
-                  // Logo SVG
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12.0),
-                    child: SvgPicture.asset(
-                      AppComponents.logo,
-                      height: 40,
-                    ),
-                  ),
-                ],
-              ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, -1.0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                );
+              },
+              child: _showAdjustableBar
+                  ? _buildAdjustableBar()
+                  : _buildDefaultAppBar(),
             ),
           ),
           Positioned(
@@ -86,7 +82,7 @@ class _SongScreenState extends State<SongScreen> {
             ),
           ),
           Positioned(
-            top: 220,
+            top: 200,
             left: 16,
             right: 16,
             bottom: 16,
@@ -115,13 +111,93 @@ class _SongScreenState extends State<SongScreen> {
                       style: GoogleFonts.getFont(
                         'Poppins',
                         color: Colors.white.withOpacity(0.8),
-                        fontSize: 16,
+                        fontSize: _fontSize, // Dynamically adjustable font size
                         letterSpacing: 0.5,
                       ),
                     ),
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Default App Bar
+  Widget _buildDefaultAppBar() {
+    return AppBar(
+      key: const ValueKey('DefaultAppBar'), // Key for AnimatedSwitcher
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      ),
+      title: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: SvgPicture.asset(
+              AppComponents.logo,
+              height: 40,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.text_fields, color: Colors.white),
+          onPressed: () {
+            setState(() {
+              _showAdjustableBar = true;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // Adjustable App Bar with Slider
+  Widget _buildAdjustableBar() {
+    return Container(
+      key: const ValueKey('AdjustableBar'), // Key for AnimatedSwitcher
+      color: Colors.black.withOpacity(0.8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 32),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _showAdjustableBar = false;
+              });
+            },
+          ),
+          Expanded(
+            child: Slider(
+              value: _fontSize,
+              min: 12.0,
+              max: 32.0,
+              divisions: 20,
+              activeColor: Colors.white,
+              inactiveColor: Colors.white.withOpacity(0.5),
+              onChanged: (value) {
+                setState(() {
+                  _fontSize = value;
+                });
+              },
+            ),
+          ),
+          Text(
+            _fontSize.toStringAsFixed(0),
+            style: GoogleFonts.getFont(
+              'Poppins',
+              color: Colors.white,
+              fontSize: 14,
             ),
           ),
         ],

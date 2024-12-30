@@ -4,10 +4,24 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../utils/app_components.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
   final double _kSize = 50.0;
 
-  const SplashScreen({super.key});
+  @override
+  void initState() {
+    super.initState();
+    // Delay for 10 seconds and navigate to the next screen
+    Future.delayed(const Duration(seconds: 10), () {
+      Navigator.pushReplacementNamed(context, '/home'); // Navigate to HomeScreen
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

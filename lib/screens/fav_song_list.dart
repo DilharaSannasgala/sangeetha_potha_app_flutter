@@ -4,14 +4,14 @@ import '../utils/app_components.dart';
 import '../widgets/song_tile.dart';
 import 'song_screen.dart';
 
-class SongList extends StatefulWidget {
-  const SongList({super.key});
+class FavList extends StatefulWidget {
+  const FavList({super.key});
 
   @override
-  State<SongList> createState() => _SongListState();
+  State<FavList> createState() => _SongListState();
 }
 
-class _SongListState extends State<SongList> {
+class _SongListState extends State<FavList> {
   final List<Map<String, String>> songs = [
     {
       'avatarUrl':
@@ -151,7 +151,7 @@ class _SongListState extends State<SongList> {
                   },
                 )
                     : Text(
-                  'All Songs',
+                  'Favourites',
                   key: const ValueKey('titleText'),
                   style: GoogleFonts.getFont(
                     'Poppins',

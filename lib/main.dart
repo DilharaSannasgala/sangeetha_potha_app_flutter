@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sangeetha_potha_app_flutter/screens/artist_list.dart';
+import 'package:sangeetha_potha_app_flutter/screens/fav_song_list.dart';
 import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
-import 'package:sangeetha_potha_app_flutter/screens/language_select_screen.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_list.dart';
 import 'package:sangeetha_potha_app_flutter/screens/splash_screen.dart';
 
@@ -15,7 +15,17 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeScreen(),
+      initialRoute: '/', // Set the initial route
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/songs': (context) => const SongList(),
+        '/artists': (context) => const ArtistList(),
+        '/favorites': (context) => const FavList(),
+      },
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
     );
   }
 }
