@@ -1,26 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-
+import '../services/service.dart';
 import '../utils/app_components.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  SplashScreenState createState() => SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  final double _kSize = 50.0;
+class SplashScreenState extends State<SplashScreen> {
+  final double _loaderSize = 50.0;
 
   @override
   void initState() {
     super.initState();
-    // Delay for 10 seconds and navigate to the next screen
-    Future.delayed(const Duration(seconds: 10), () {
-      Navigator.pushReplacementNamed(context, '/home'); // Navigate to HomeScreen
-    });
+    _syncDataAndNavigate();
+  }
+
+  Future<void> _syncDataAndNavigate() async {
+    try {
+      // Initialize the SQLite database before data operations
+      await Service().initDatabase();
+
+      // Attempt to fetch songs from Firebase
+      await Service().fetchSongsFromFirebase();
+
+      // Attempt to fetch artists from Firebase
+      await Service().fetchArtistsFromFirebase();
+
+      // Navigate to the HomeScreen if the widget is still mounted
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      print('Error during data sync: $e');
+      if (mounted) {
+        // Navigate to an error or retry screen if required
+        Navigator.pushReplacementNamed(context, '/error');
+      }
+    }
   }
 
   @override
@@ -35,7 +56,6 @@ class _SplashScreenState extends State<SplashScreen> {
             AppComponents.background,
             fit: BoxFit.cover,
           ),
-
           Align(
             alignment: const Alignment(0, -0.3),
             child: Column(
@@ -52,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 // Loader (staggered dots wave)
                 LoadingAnimationWidget.staggeredDotsWave(
                   color: Colors.white,
-                  size: _kSize, // Loader size
+                  size: _loaderSize,
                 ),
               ],
             ),

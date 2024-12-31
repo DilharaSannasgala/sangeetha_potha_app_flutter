@@ -76,11 +76,18 @@ class _SongScreenState extends State<SongScreen> {
               avatarUrl: widget.avatarUrl,
               title: widget.title,
               subtitle: widget.subtitle,
+              isFav: false,
+              onFavoriteToggle: (isFavorited) {
+                setState(() {
+                  print('Favorite status changed: $isFavorited');
+                });
+              },
               onTap: () {
                 print('Song Tile tapped!');
               },
             ),
           ),
+
           Positioned(
             top: 200,
             left: 16,
@@ -166,7 +173,7 @@ class _SongScreenState extends State<SongScreen> {
     return Container(
       key: const ValueKey('AdjustableBar'), // Key for AnimatedSwitcher
       color: Colors.black.withOpacity(0.8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 42),
       child: Row(
         children: [
           IconButton(

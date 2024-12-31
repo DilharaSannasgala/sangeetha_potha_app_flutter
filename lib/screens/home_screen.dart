@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_screen.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 
+import '../services/manage_favorite.dart';
+import '../services/service.dart';
 import '../utils/app_components.dart';
 import '../widgets/artist_tile.dart';
 import '../widgets/new_song_tile.dart';
@@ -17,9 +19,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool isSearching = false;
-  String searchQuery = "";
   int selectedTabIndex = 0;
+  final Service _service = Service();
+  List<Map<String, dynamic>> songs = [];
 
   final List<Map<String, String>> newlyAddedSongs = [
     {
@@ -42,30 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  final List<Map<String, String>> songs = [
-    {
-      'avatarUrl':
-      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F281862ef03ad7767ba8b904992c2115d8042c54aimage%201.png?alt=media&token=d750e875-508f-4119-88ae-55b4da7bcc61',
-      'title': 'නාඩගම් ගීය - Naadagam geeya',
-      'artist': 'Charitha Attalage',
-      'lyrics': 'Here are the lyrics for Naadagam geeya...'
-    },
-    {
-      'avatarUrl':
-      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F41419a5cc0f0eaf0a97e9abe721dbee82ff54179image%202.png?alt=media&token=435315c6-75b9-40d5-a5df-e556a6b4707f',
-      'title': 'රහත් හිමිවරුන් - Rahath himiwarun',
-      'artist': 'Dhayan Hewage ft Ravi Jay',
-      'lyrics': 'Here are the lyrics for Rahath himiwarun...'
-    },
-    {
-      'avatarUrl':
-      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F02653ef297798a327de62ddbfc137be4636831aeimage%203.png?alt=media&token=c29c3408-bce4-4908-8c6e-2a8470243cae',
-      'title': 'ඔබට තියෙන ආදරේ - Obata thiyena adare',
-      'artist': 'M.S. Fernando',
-      'lyrics': 'Here are the lyrics for Obata thiyena adare...'
-    },
-  ];
-
   final List<Map<String, String>> artists = [
     {
       'avatarUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F868ff930ba88066f692ccbc294bb8a3953f53794image%204.png?alt=media&token=91416d66-31b1-4ae8-8a71-a8637b0c4a96',
@@ -81,16 +59,21 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  void startSearch() {
-    setState(() {
-      isSearching = true;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
   }
 
-  void stopSearch() {
+  // Fetch songs with enriched artist details
+  Future<void> _fetchData() async {
+    final fetchedSongs = await _service.fetchSongs();
+    for (var song in fetchedSongs) {
+      final isFav = await FavoritesManager.isFavorite(song['title']); // Use title or unique ID
+      song['isFav'] = isFav;
+    }
     setState(() {
-      isSearching = false;
-      searchQuery = "";
+      songs = fetchedSongs;
     });
   }
 
@@ -121,26 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
               AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
-                title: isSearching
-                    ? TextField(
-                  key: const ValueKey('searchField'),
-                  autofocus: true,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 20,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: 'Search Songs...',
-                    hintStyle: TextStyle(color: Colors.white54),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (query) {
-                    setState(() {
-                      searchQuery = query;
-                    });
-                  },
-                )
-                    : null, // No title for the home screen
+                title: null, // No title for the home screen
                 leading: Builder(
                   builder: (context) {
                     return IconButton(
@@ -151,18 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                actions: [
-                  if (!isSearching)
-                    IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
-                      onPressed: startSearch,
-                    ),
-                  if (isSearching)
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: stopSearch,
-                    ),
-                ],
               ),
               // Scrollable Content
               Expanded(
@@ -171,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       // Banner
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Container(
                           decoration: BoxDecoration(
                             boxShadow: [
@@ -284,24 +236,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           itemCount: songs.length,
                           itemBuilder: (context, index) {
                             final song = songs[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SongScreen(
-                                      avatarUrl: song['avatarUrl']!,
-                                      title: song['title']!,
-                                      subtitle: song['artist']!,
-                                      lyrics: song['lyrics']!,
+                            return Material(
+                              color: Colors.transparent, // To make the background color consistent
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                splashColor: AppColors.accentColorDark.withOpacity(0.2),
+                                highlightColor: AppColors.accentColorDark.withOpacity(0.1),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SongScreen(
+                                        avatarUrl: song['coverArtPath'] ?? '',
+                                        title: song['title'] ?? '',
+                                        subtitle: song['artistName'] ?? 'Unknown Artist',
+                                        lyrics: song['lyrics'] ?? '',
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              child: SongTile(
-                                avatarUrl: song['avatarUrl']!,
-                                title: song['title']!,
-                                subtitle: song['artist']!,
+                                  );
+                                },
+                                child: SongTile(
+                                  avatarUrl: song['coverArtPath'] ?? '',
+                                  title: song['title'] ?? '',
+                                  subtitle: song['artistName'] ?? 'Unknown Artist',
+                                  isFav: song['isFav'] ?? false,
+                                  onFavoriteToggle: (isFavorited) async {
+                                    await FavoritesManager.setFavorite(song['title'], isFavorited);
+                                    setState(() {
+                                      songs[index]['isFav'] = isFavorited;
+                                    });
+                                  },
+                                ),
                               ),
                             );
                           },

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
+import 'package:sangeetha_potha_app_flutter/services/manage_favorite.dart';
+import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import '../utils/app_components.dart';
 import '../widgets/song_tile.dart';
 import 'song_screen.dart';
+import '../services/service.dart';
 
 class FavList extends StatefulWidget {
   const FavList({super.key});
@@ -12,63 +16,28 @@ class FavList extends StatefulWidget {
 }
 
 class _SongListState extends State<FavList> {
-  final List<Map<String, String>> songs = [
-    {
-      'avatarUrl':
-      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F281862ef03ad7767ba8b904992c2115d8042c54aimage%201.png?alt=media&token=d750e875-508f-4119-88ae-55b4da7bcc61',
-      'title': 'නාඩගම් ගීය - Naadagam geeya',
-      'subtitle': 'Charitha Attalage',
-      'lyrics': '''හෙට නාඩගමේ මං රජාට අඳිනවා
-                  අජාසත්ත නාමෙන්
-                  මුළු ගමේම අඟනුන් මට වහ වැටෙනවා
-                  බලාපල්ලා බොරුනම්
-                  හෙට නාඩගමේ මං රජාට අඳිනවා
-                  අජාසත්ත නාමෙන්
-                  මුළු ගමේම අඟනුන් මට හිත වැටෙනවා
-                  බලාපල්ලා බොරුනම්
-                  දමා කඩුක්කන් ඔටුනු නළල් පටි
-                  කඩුව කරකවා සබයට එන හැටි
-                  දමා කඩුක්කන් ඔටුනු නළල් පටි
-                  කඩුව කරකවා සබයට එන හැටි
-                  බලාහිඳින අඟනුන් සත්තයි
-                  ආලේ බඳී රහසින්
-                  ආ... බලාහිඳින අඟනුන්
-                  ආලේ බඳී රහසින්
-                  පවර අජාසත් නිරිඳුන් මම වෙමි
-                  පියා නසා රජකම අරගන්නෙමි
-                  පවර අජාසත් නිරිඳුන් මම වෙමි
-                  පියා නසා රජකම අරගන්නෙමි
-                  කියා එද්දි අද මං සත්තයි
-                  ආලේ බදියි අඟනුන්
-                  ආ... කියා එද්දි අද මං
-                  ආලේ බදියි අඟනුන්
-                  හෙට නාඩගමේ මං රජාට අඳිනවා
-                  අජාසත්ත නාමෙන්
-                  මුළු ගමේම අඟනුන් මට වහ වැටෙනවා
-                  බලාපල්ලා බොරුනම්
-                  හෙට නාඩගමේ මං රජාට අඳිනවා
-                  අජාසත්ත නාමෙන්
-                  මුළු ගමේම අඟනුන් මට හිත වැටෙනවා
-                  බලාපල්ලා බොරුනම්'''
-    },
-    {
-      'avatarUrl':
-      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F41419a5cc0f0eaf0a97e9abe721dbee82ff54179image%202.png?alt=media&token=435315c6-75b9-40d5-a5df-e556a6b4707f',
-      'title': 'රහත් හිමිවරුන් - Rahath himiwarun',
-      'subtitle': 'Dhayan Hewage ft Ravi Jay',
-      'lyrics': 'Here are the lyrics for Rahath himiwarun...'
-    },
-    {
-      'avatarUrl':
-      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2F02653ef297798a327de62ddbfc137be4636831aeimage%203.png?alt=media&token=c29c3408-bce4-4908-8c6e-2a8470243cae',
-      'title': 'ඔබට තියෙන ආදරේ - Obata thiyena adare',
-      'subtitle': 'M.S. Fernando',
-      'lyrics': 'Here are the lyrics for Obata thiyena adare...'
-    },
-  ];
-
+  final Service _service = Service();
+  List<Map<String, dynamic>> songs = [];
   String searchQuery = '';
   bool isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  // Fetch songs with enriched artist details
+  Future<void> _fetchData() async {
+    final fetchedSongs = await _service.fetchSongs();
+    for (var song in fetchedSongs) {
+      final isFav = await FavoritesManager.isFavorite(song['title']); // Use title or unique ID
+      song['isFav'] = isFav;
+    }
+    setState(() {
+      songs = fetchedSongs;
+    });
+  }
 
   // Method to toggle search mode
   void startSearch() {
@@ -86,16 +55,15 @@ class _SongListState extends State<FavList> {
   }
 
   // Method to filter songs based on the search query
-  List<Map<String, String>> getFilteredSongs() {
+  List<Map<String, dynamic>> getFilteredSongs() {
     if (searchQuery.isEmpty) {
       return songs;
     }
     return songs.where((song) {
-      final titleLower = song['title']!.toLowerCase();
-      final subtitleLower = song['subtitle']!.toLowerCase();
+      final titleLower = song['title']?.toLowerCase() ?? '';
+      final artistNameLower = song['artistName']?.toLowerCase() ?? '';
       final queryLower = searchQuery.toLowerCase();
-      return titleLower.contains(queryLower) ||
-          subtitleLower.contains(queryLower);
+      return titleLower.contains(queryLower) || artistNameLower.contains(queryLower);
     }).toList();
   }
 
@@ -151,7 +119,7 @@ class _SongListState extends State<FavList> {
                   },
                 )
                     : Text(
-                  'Favourites',
+                  'Favorites',
                   key: const ValueKey('titleText'),
                   style: GoogleFonts.getFont(
                     'Poppins',
@@ -170,7 +138,13 @@ class _SongListState extends State<FavList> {
                   if (isSearching) {
                     stopSearch();
                   } else {
-                    Navigator.pop(context);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HomeScreen(),
+                      ),
+                          (route) => false,
+                    );
                   }
                 },
               ),
@@ -192,25 +166,38 @@ class _SongListState extends State<FavList> {
               itemCount: filteredSongs.length,
               itemBuilder: (context, index) {
                 final song = filteredSongs[index];
-                return GestureDetector(
-                  onTap: () {
-                    // Navigate to SongScreen on tap
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SongScreen(
-                          avatarUrl: song['avatarUrl']!,
-                          title: song['title']!,
-                          subtitle: song['subtitle']!,
-                          lyrics: song['lyrics']!,
+
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    splashColor: AppColors.accentColorDark.withOpacity(0.2),
+                    highlightColor: AppColors.accentColorDark.withOpacity(0.1),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SongScreen(
+                            avatarUrl: song['coverArtPath'] ?? '',
+                            title: song['title'] ?? '',
+                            subtitle: song['artistName'] ?? 'Unknown Artist',
+                            lyrics: song['lyrics'] ?? '',
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  child: SongTile(
-                    avatarUrl: song['avatarUrl']!,
-                    title: song['title']!,
-                    subtitle: song['subtitle']!,
+                      );
+                    },
+                    child: SongTile(
+                      avatarUrl: song['coverArtPath'] ?? '',
+                      title: song['title'] ?? '',
+                      subtitle: song['artistName'] ?? 'Unknown Artist',
+                      isFav: song['isFav'] ?? false,
+                      onFavoriteToggle: (isFavorited) async {
+                        await FavoritesManager.setFavorite(song['title'], isFavorited);
+                        setState(() {
+                          songs[index]['isFav'] = isFavorited;
+                        });
+                      },
+                    ),
                   ),
                 );
               },
