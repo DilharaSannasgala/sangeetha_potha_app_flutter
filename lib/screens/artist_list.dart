@@ -36,7 +36,7 @@ class _ArtistListState extends State<ArtistList> {
           'name': artist['name']?.toString() ?? '',
         };
       }).toList();
-      print('Mapped artists: $artists'); // Debug the mapped data
+      print('Mapped artists: $artists');
     });
   }
 
