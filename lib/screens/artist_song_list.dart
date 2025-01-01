@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
+import 'package:sangeetha_potha_app_flutter/screens/song_screen.dart';
 import 'package:sangeetha_potha_app_flutter/services/manage_favorite.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import '../widgets/song_tile.dart';
@@ -171,7 +172,17 @@ class _ArtistSongListState extends State<ArtistSongList> {
                     splashColor: AppColors.accentColorDark.withOpacity(0.2),
                     highlightColor: AppColors.accentColorDark.withOpacity(0.1),
                     onTap: () {
-                      // Navigate to song screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SongScreen(
+                            avatarUrl: song['coverArtPath'] ?? '',
+                            title: song['title'] ?? '',
+                            subtitle: song['artistName'] ?? 'Unknown Artist',
+                            lyrics: song['lyrics'] ?? '',
+                          ),
+                        ),
+                      );
                     },
                     child: SongTile(
                       avatarUrl: song['coverArtPath'] ?? '',

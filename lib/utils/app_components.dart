@@ -17,4 +17,5 @@ class AppComponents {
  static const String artistIcon = '${iconPath}artist_icon.svg';
  static const String favIcon = '${iconPath}fav_icon.svg';
  static const String fallbackIcon = '${iconPath}fallback_image.png';
+ static const String seeMoreIcon = '${iconPath}see_more.svg';
 }

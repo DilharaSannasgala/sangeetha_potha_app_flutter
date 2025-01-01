@@ -28,21 +28,22 @@ class Service {
   Future<void> _createDb(Database db, int version) async {
     print('Creating tables in the database');
     await db.execute('''CREATE TABLE artists (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        coverArtUrl TEXT,
-        coverArtPath TEXT
-      )''');
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      coverArtUrl TEXT,
+      coverArtPath TEXT
+    )''');
     await db.execute('''CREATE TABLE songs (
-        id TEXT PRIMARY KEY,
-        title TEXT,
-        lyrics TEXT,
-        coverArtUrl TEXT,
-        coverArtPath TEXT,
-        isFav INTEGER,
-        artistId TEXT,
-        FOREIGN KEY (artistId) REFERENCES artists (id)
-      )''');
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      lyrics TEXT,
+      coverArtUrl TEXT,
+      coverArtPath TEXT,
+      isFav INTEGER,
+      artistId TEXT,
+      createdAt TEXT, -- New column for createdAt
+      FOREIGN KEY (artistId) REFERENCES artists (id)
+    )''');
     print('Tables created');
   }
 
@@ -100,8 +101,9 @@ class Service {
         final artist = artistData.first;
         enrichedSongs.add({
           ...song,
-          'artistName': artist['name'], // Add artist name
-          'artistCoverArtPath': artist['coverArtPath'], // Add artist cover art path
+          'artistName': artist['name'],
+          'artistCoverArtPath': artist['coverArtPath'],
+          'createdAt': song['createdAt'],
         });
       } else {
         // Add the song as-is if no artist is found
@@ -217,18 +219,22 @@ class Service {
         bool isFav = doc['isFav'];
         String artistId = doc['artistId'];
 
+        Timestamp createdAtTimestamp = doc['createdAt'] ?? Timestamp.now();
+        String createdAt = createdAtTimestamp.toDate().toIso8601String();
+
         print('Downloading cover art for song: $title');
         String coverArtPath = await _downloadImage(coverArtUrl, 'song_$id');
         print('Cover art downloaded to path: $coverArtPath');
 
         Map<String, dynamic> songData = {
-          'id': id,  // Use doc.id as the unique identifier
+          'id': id,
           'title': title,
           'lyrics': lyrics,
           'coverArtUrl': coverArtUrl,
           'coverArtPath': coverArtPath,
           'isFav': isFav ? 1 : 0,
           'artistId': artistId,
+          'createdAt': createdAt,
         };
 
         await insertSong(songData);
@@ -237,6 +243,7 @@ class Service {
       print('No internet connection. Skipping song fetch.');
     }
   }
+
 
   Future<String> _downloadImage(String url, String fileName) async {
     try {
