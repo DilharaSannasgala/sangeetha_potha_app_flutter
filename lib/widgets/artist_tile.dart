@@ -1,5 +1,7 @@
+import 'dart:io'; // For File handling
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sangeetha_potha_app_flutter/utils/app_components.dart';
 
 import '../utils/app_color.dart';
 
@@ -35,30 +37,16 @@ class ArtistTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Circular Avatar with fallback image
+              // Circular Avatar with fallback
               ClipOval(
-                child: Image.network(
-                  avatarUrl,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.network(
-                      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2FOBUI8qgdzH8n79bpoj6t%2Fc261c1403acce274325fd766f37742a0179e87d8image%208.png?alt=media&token=1fb77fd2-ec20-47f3-939f-445a1b4fe557',
-                      width: 70,
-                      height: 70,
-                      fit: BoxFit.cover,
-                    );
-                  },
-                ),
+                child: _getAvatarWidget(),
               ),
               const SizedBox(width: 16),
               // Title (Artist's Name)
               Expanded(
                 child: Text(
-                  title,
-                  style: GoogleFonts.getFont(
-                    'Poppins',
+                  title.isNotEmpty ? title : 'Unknown Artist',
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -72,5 +60,51 @@ class ArtistTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Helper function to decide whether to use Image.network or Image.file
+  Widget _getAvatarWidget() {
+    // Check if the avatarUrl is a valid file path or a URL
+    if (avatarUrl.startsWith('http') || avatarUrl.startsWith('https')) {
+      // If it's a URL, use Image.network
+      return Image.network(
+        avatarUrl,
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            AppComponents.fallbackIcon,
+            width: 70,
+            height: 70,
+            fit: BoxFit.cover,
+          );
+        },
+      );
+    } else if (File(avatarUrl).existsSync()) {
+      // If it's a local file path, use Image.file
+      return Image.file(
+        File(avatarUrl),
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            AppComponents.fallbackIcon,
+            width: 70,
+            height: 70,
+            fit: BoxFit.cover,
+          );
+        },
+      );
+    } else {
+      // If neither, show a fallback image
+      return Image.asset(
+        AppComponents.fallbackIcon,
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+      );
+    }
   }
 }

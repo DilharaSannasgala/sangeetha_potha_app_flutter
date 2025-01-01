@@ -113,6 +113,59 @@ class Service {
     return enrichedSongs;
   }
 
+  Future<List<Map<String, dynamic>>> fetchArtists() async {
+    print('Fetching artists from local database');
+
+    // Query all artists from the local database
+    final List<Map<String, dynamic>> artists = await _database.query('artists');
+    print('Database contents: $artists');
+
+    if (artists.isEmpty) {
+      print('No artists found in the local database.');
+    } else {
+      print('Fetched ${artists.length} artists from the local database.');
+    }
+
+    return artists;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchSongsByArtist(String artistName) async {
+    print('Fetching songs by artist: $artistName');
+
+    // First, get the artist record from the 'artists' table
+    final List<Map<String, dynamic>> artistData = await _database.query(
+      'artists',
+      where: 'name = ?',
+      whereArgs: [artistName],
+    );
+
+    if (artistData.isEmpty) {
+      print('Artist not found: $artistName');
+      return []; // Return an empty list if the artist is not found
+    }
+
+    final artistId = artistData.first['id'];
+
+    // Now, fetch songs related to this artistId
+    final List<Map<String, dynamic>> songs = await _database.query(
+      'songs',
+      where: 'artistId = ?',
+      whereArgs: [artistId],
+    );
+
+    // Enrich each song with artist details
+    List<Map<String, dynamic>> enrichedSongs = [];
+    for (var song in songs) {
+      enrichedSongs.add({
+        ...song,
+        'artistName': artistData.first['name'], // Add artist name
+        'artistCoverArtPath': artistData.first['coverArtPath'], // Add artist cover art path
+      });
+    }
+
+    print('Fetched ${enrichedSongs.length} songs for artist: $artistName');
+    return enrichedSongs;
+  }
 
   Future<bool> isConnected() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
@@ -157,7 +210,7 @@ class Service {
       print('Fetched ${songsSnapshot.docs.length} songs from Firestore');
 
       for (var doc in songsSnapshot.docs) {
-        String id = doc.id;  // Firebase document ID as the unique identifier
+        String id = doc.id;
         String title = doc['title'];
         String lyrics = doc['lyrics'];
         String coverArtUrl = doc['songCoverUrl'];

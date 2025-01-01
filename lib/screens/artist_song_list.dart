@@ -3,19 +3,23 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
 import 'package:sangeetha_potha_app_flutter/services/manage_favorite.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
-import '../utils/app_components.dart';
 import '../widgets/song_tile.dart';
-import 'song_screen.dart';
 import '../services/service.dart';
+import '../utils/app_components.dart';
 
-class SongList extends StatefulWidget {
-  const SongList({super.key});
+class ArtistSongList extends StatefulWidget {
+  final String artistName;
+
+  const ArtistSongList({
+    Key? key,
+    required this.artistName,
+  }) : super(key: key);
 
   @override
-  State<SongList> createState() => _SongListState();
+  State<ArtistSongList> createState() => _ArtistSongListState();
 }
 
-class _SongListState extends State<SongList> {
+class _ArtistSongListState extends State<ArtistSongList> {
   final Service _service = Service();
   List<Map<String, dynamic>> songs = [];
   String searchQuery = '';
@@ -27,9 +31,9 @@ class _SongListState extends State<SongList> {
     _fetchData();
   }
 
-  // Fetch songs with enriched artist details
+  // Fetch songs for the selected artist
   Future<void> _fetchData() async {
-    final fetchedSongs = await _service.fetchSongs();
+    final fetchedSongs = await _service.fetchSongsByArtist(widget.artistName);
     for (var song in fetchedSongs) {
       final isFav = await FavoritesManager.isFavorite(song['title']);
       song['isFav'] = isFav;
@@ -39,14 +43,14 @@ class _SongListState extends State<SongList> {
     });
   }
 
-  // Method to toggle search mode
+  // Start search mode
   void startSearch() {
     setState(() {
       isSearching = true;
     });
   }
 
-  // Method to close search
+  // Stop search mode
   void stopSearch() {
     setState(() {
       isSearching = false;
@@ -54,16 +58,15 @@ class _SongListState extends State<SongList> {
     });
   }
 
-  // Method to filter songs based on the search query
+  // Filter songs based on search query
   List<Map<String, dynamic>> getFilteredSongs() {
     if (searchQuery.isEmpty) {
       return songs;
     }
     return songs.where((song) {
       final titleLower = song['title']?.toLowerCase() ?? '';
-      final artistNameLower = song['artistName']?.toLowerCase() ?? '';
       final queryLower = searchQuery.toLowerCase();
-      return titleLower.contains(queryLower) || artistNameLower.contains(queryLower);
+      return titleLower.contains(queryLower);
     }).toList();
   }
 
@@ -119,7 +122,7 @@ class _SongListState extends State<SongList> {
                   },
                 )
                     : Text(
-                  'All Songs',
+                  widget.artistName,
                   key: const ValueKey('titleText'),
                   style: GoogleFonts.getFont(
                     'Poppins',
@@ -138,13 +141,7 @@ class _SongListState extends State<SongList> {
                   if (isSearching) {
                     stopSearch();
                   } else {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ),
-                          (route) => false,
-                    );
+                    Navigator.pop(context);
                   }
                 },
               ),
@@ -174,17 +171,7 @@ class _SongListState extends State<SongList> {
                     splashColor: AppColors.accentColorDark.withOpacity(0.2),
                     highlightColor: AppColors.accentColorDark.withOpacity(0.1),
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SongScreen(
-                            avatarUrl: song['coverArtPath'] ?? '',
-                            title: song['title'] ?? '',
-                            subtitle: song['artistName'] ?? 'Unknown Artist',
-                            lyrics: song['lyrics'] ?? '',
-                          ),
-                        ),
-                      );
+                      // Navigate to song screen
                     },
                     child: SongTile(
                       avatarUrl: song['coverArtPath'] ?? '',
