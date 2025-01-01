@@ -31,7 +31,8 @@ class _SongListState extends State<FavList> {
   Future<void> _fetchData() async {
     final fetchedSongs = await _service.fetchSongs();
     for (var song in fetchedSongs) {
-      final isFav = await FavoritesManager.isFavorite(song['title']); // Use title or unique ID
+      final isFav = await FavoritesManager.isFavorite(
+          song['title']); // Use title or unique ID
       song['isFav'] = isFav;
     }
     setState(() {
@@ -54,22 +55,26 @@ class _SongListState extends State<FavList> {
     });
   }
 
-  // Method to filter songs based on the search query
+// Method to filter songs based on the search query and only show favorited songs
   List<Map<String, dynamic>> getFilteredSongs() {
     if (searchQuery.isEmpty) {
-      return songs;
+      return songs.where((song) => song['isFav'] == true)
+          .toList(); // Filter only favorited songs
     }
     return songs.where((song) {
       final titleLower = song['title']?.toLowerCase() ?? '';
       final artistNameLower = song['artistName']?.toLowerCase() ?? '';
       final queryLower = searchQuery.toLowerCase();
-      return titleLower.contains(queryLower) || artistNameLower.contains(queryLower);
+      return (titleLower.contains(queryLower) ||
+          artistNameLower.contains(queryLower)) &&
+          song['isFav'] == true; // Also filter only favorited songs
     }).toList();
   }
 
+
   @override
   Widget build(BuildContext context) {
-    final filteredSongs = getFilteredSongs();
+    final filteredSongs = getFilteredSongs(); // Get filtered songs (only favorites)
 
     return Scaffold(
       body: Stack(
@@ -177,12 +182,14 @@ class _SongListState extends State<FavList> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => SongScreen(
-                            avatarUrl: song['coverArtPath'] ?? '',
-                            title: song['title'] ?? '',
-                            subtitle: song['artistName'] ?? 'Unknown Artist',
-                            lyrics: song['lyrics'] ?? '',
-                          ),
+                          builder: (context) =>
+                              SongScreen(
+                                avatarUrl: song['coverArtPath'] ?? '',
+                                title: song['title'] ?? '',
+                                subtitle: song['artistName'] ??
+                                    'Unknown Artist',
+                                lyrics: song['lyrics'] ?? '',
+                              ),
                         ),
                       );
                     },
@@ -192,7 +199,8 @@ class _SongListState extends State<FavList> {
                       subtitle: song['artistName'] ?? 'Unknown Artist',
                       isFav: song['isFav'] ?? false,
                       onFavoriteToggle: (isFavorited) async {
-                        await FavoritesManager.setFavorite(song['title'], isFavorited);
+                        await FavoritesManager.setFavorite(song['title'],
+                            isFavorited);
                         setState(() {
                           songs[index]['isFav'] = isFavorited;
                         });
