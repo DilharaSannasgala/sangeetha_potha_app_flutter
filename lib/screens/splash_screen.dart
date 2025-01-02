@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import '../services/service.dart';
 import '../utils/app_components.dart';
 
@@ -13,6 +14,8 @@ class SplashScreen extends StatefulWidget {
 
 class SplashScreenState extends State<SplashScreen> {
   final double _loaderSize = 50.0;
+  String currentAction = "Initializing..."; // Track the current action
+  double progressValue = 0.0; // Track the progress percentage
 
   @override
   void initState() {
@@ -22,23 +25,39 @@ class SplashScreenState extends State<SplashScreen> {
 
   Future<void> _syncDataAndNavigate() async {
     try {
-      // Initialize the SQLite database before data operations
+      // Step 1: Initialize the SQLite database
+      setState(() {
+        currentAction = "Initializing database...";
+        progressValue = 0.2;
+      });
       await Service().initDatabase();
 
-      // Attempt to fetch songs from Firebase
+      // Step 2: Fetch songs from Firebase
+      setState(() {
+        currentAction = "Searching for new songs...";
+        progressValue = 0.5;
+      });
       await Service().fetchSongsFromFirebase();
 
-      // Attempt to fetch artists from Firebase
+      // Step 3: Fetch artists from Firebase
+      setState(() {
+        currentAction = "Downloading artist details...";
+        progressValue = 0.8;
+      });
       await Service().fetchArtistsFromFirebase();
 
       // Navigate to the HomeScreen if the widget is still mounted
       if (mounted) {
+        setState(() {
+          currentAction = "Finalizing...";
+          progressValue = 1.0;
+        });
+        await Future.delayed(const Duration(seconds: 1)); // Optional delay for smooth transition
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
       print('Error during data sync: $e');
       if (mounted) {
-        // Navigate to an error or retry screen if required
         Navigator.pushReplacementNamed(context, '/error');
       }
     }
@@ -73,6 +92,32 @@ class SplashScreenState extends State<SplashScreen> {
                 LoadingAnimationWidget.staggeredDotsWave(
                   color: Colors.white,
                   size: _loaderSize,
+                ),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Action Text
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Text(
+                    currentAction,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Progress Bar
+                LinearProgressIndicator(
+                  value: progressValue,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentColorDark),
                 ),
               ],
             ),

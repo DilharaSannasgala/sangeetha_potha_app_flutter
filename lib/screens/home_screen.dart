@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/screens/artist_list.dart';
+import 'package:sangeetha_potha_app_flutter/screens/search_page.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_list.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import 'package:sangeetha_potha_app_flutter/widgets/newly_added_songs.dart';
@@ -90,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
               AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
+                title: null,
                 leading: Builder(
                   builder: (context) {
                     return IconButton(
@@ -100,6 +102,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchPage(
+                            songs: songs,
+                            artists: artists,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
               // Scrollable Content
               Expanded(
@@ -127,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       // Newly Added Songs Section
                       NewlyAddedSongs(
                         songs: topRecentSongs,

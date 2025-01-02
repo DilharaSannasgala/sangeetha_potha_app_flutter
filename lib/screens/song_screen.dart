@@ -28,14 +28,35 @@ class _SongScreenState extends State<SongScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Step 1: Clean the lyrics
+    String cleanedLyrics = widget.lyrics
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n')
+        .replaceAll('\t', '')
+        .replaceAll('"', '')
+        .replaceAll(',', '\n')
+        .trim();
+
+    // Debug: Print the cleaned lyrics to check for truncation
+    debugPrint("Cleaned Lyrics: '$cleanedLyrics'", wrapWidth: 1024);
+
+    // Step 2: Split into lines
+    List<String> lyricsLines = cleanedLyrics
+        .split('\n')
+        .where((line) => line.trim().isNotEmpty)
+        .toList();
+
+    // Step 3: Debug each line
+    for (int i = 0; i < lyricsLines.length; i++) {
+      debugPrint("Line $i: '${lyricsLines[i]}'", wrapWidth: 1024);
+    }
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
           // Background Color
-          Container(
-            color: Colors.black,
-          ),
+          Container(color: Colors.black),
           // Background Image with reduced opacity
           ColorFiltered(
             colorFilter: ColorFilter.mode(
@@ -56,10 +77,7 @@ class _SongScreenState extends State<SongScreen> {
               duration: const Duration(milliseconds: 300),
               transitionBuilder: (Widget child, Animation<double> animation) {
                 return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, -1.0),
-                    end: Offset.zero,
-                  ).animate(animation),
+                  position: Tween<Offset>(begin: const Offset(0.0, -1.0), end: Offset.zero).animate(animation),
                   child: child,
                 );
               },
@@ -87,7 +105,6 @@ class _SongScreenState extends State<SongScreen> {
               },
             ),
           ),
-
           Positioned(
             top: 200,
             left: 16,
@@ -97,13 +114,13 @@ class _SongScreenState extends State<SongScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5), // Slightly transparent background
+                  color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    SelectableText(
                       'Lyrics',
                       style: GoogleFonts.getFont(
                         'Poppins',
@@ -113,14 +130,16 @@ class _SongScreenState extends State<SongScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // Display lyrics using Text
                     Text(
-                      widget.lyrics,
+                      cleanedLyrics, // Directly use cleanedLyrics
                       style: GoogleFonts.getFont(
                         'Poppins',
                         color: Colors.white.withOpacity(0.8),
-                        fontSize: _fontSize, // Dynamically adjustable font size
+                        fontSize: _fontSize,
                         letterSpacing: 0.5,
                       ),
+                      textAlign: TextAlign.left,
                     ),
                   ],
                 ),
