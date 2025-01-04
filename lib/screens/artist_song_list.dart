@@ -25,6 +25,7 @@ class _ArtistSongListState extends State<ArtistSongList> {
   List<Map<String, dynamic>> songs = [];
   String searchQuery = '';
   bool isSearching = false;
+  bool isLoading = true; // Track loading state
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _ArtistSongListState extends State<ArtistSongList> {
     }
     setState(() {
       songs = fetchedSongs;
+      isLoading = false; // Set loading to false after data is fetched
     });
   }
 
@@ -160,7 +162,24 @@ class _ArtistSongListState extends State<ArtistSongList> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: ListView.builder(
+            child: isLoading
+                ? Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            ) // Show loading spinner while data is loading
+                : filteredSongs.isEmpty
+                ? Center(
+              child: Text(
+                'No songs found.',
+                style: GoogleFonts.getFont(
+                  'Poppins',
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+              ),
+            ) // Show empty message when no songs are found
+                : ListView.builder(
               itemCount: filteredSongs.length,
               itemBuilder: (context, index) {
                 final song = filteredSongs[index];

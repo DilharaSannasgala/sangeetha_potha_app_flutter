@@ -18,6 +18,7 @@ class _ArtistListState extends State<ArtistList> {
   List<Map<String, String>> artists = [];
   bool isSearching = false;
   String searchQuery = '';
+  bool isLoading = true; // Track loading state
 
   @override
   void initState() {
@@ -25,6 +26,7 @@ class _ArtistListState extends State<ArtistList> {
     _fetchData();
   }
 
+  // Fetch artist data from the service
   Future<void> _fetchData() async {
     final fetchedArtists = await _service.fetchArtists();
     print('Fetched artists: $fetchedArtists'); // Debug the fetched data
@@ -36,7 +38,7 @@ class _ArtistListState extends State<ArtistList> {
           'name': artist['name']?.toString() ?? '',
         };
       }).toList();
-      print('Mapped artists: $artists');
+      isLoading = false; // Set loading to false after data is fetched
     });
   }
 
@@ -156,7 +158,24 @@ class _ArtistListState extends State<ArtistList> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: ListView.builder(
+            child: isLoading
+                ? Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            ) // Show loading spinner while data is loading
+                : filteredArtists.isEmpty
+                ? Center(
+              child: Text(
+                'No artists found.',
+                style: GoogleFonts.getFont(
+                  'Poppins',
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+              ),
+            ) // Show empty message when no artists are found
+                : ListView.builder(
               itemCount: filteredArtists.length,
               itemBuilder: (context, index) {
                 return ArtistTile(

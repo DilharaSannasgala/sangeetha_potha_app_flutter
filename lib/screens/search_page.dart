@@ -7,7 +7,7 @@ import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_components.dart';
 import 'package:sangeetha_potha_app_flutter/widgets/song_tile.dart';
 import 'package:sangeetha_potha_app_flutter/widgets/artist_tile.dart';
-import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';  // Ensure you import your HomeScreen
+import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
 
 class SearchPage extends StatefulWidget {
   final List<Map<String, dynamic>> songs;
