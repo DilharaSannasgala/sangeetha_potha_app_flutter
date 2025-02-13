@@ -56,7 +56,7 @@ class _SearchPageState extends State<SearchPage> {
 
     return Scaffold(
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: [
             Expanded(
@@ -77,7 +77,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
             if (_searchController.text.isNotEmpty)
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   setState(() {
                     _searchController.clear();
@@ -89,7 +89,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
         backgroundColor: Colors.black,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
@@ -167,7 +167,7 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ),
                   );
-                }).toList(),
+                }),
               ],
               if (filteredArtists.isNotEmpty) ...[
                 Padding(
@@ -196,7 +196,7 @@ class _SearchPageState extends State<SearchPage> {
                       );
                     },
                   );
-                }).toList(),
+                }),
               ],
               if (filteredSongs.isEmpty && filteredArtists.isEmpty) ...[
                 Center(

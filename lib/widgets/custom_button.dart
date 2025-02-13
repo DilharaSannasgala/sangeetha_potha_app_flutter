@@ -9,12 +9,12 @@ class CustomButton extends StatefulWidget {
   final VoidCallback onPressed;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.width = 200, // Default width
     this.height = 40, // Default height
-  }) : super(key: key);
+  });
 
   @override
   _CustomButtonState createState() => _CustomButtonState();

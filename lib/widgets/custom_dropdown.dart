@@ -10,13 +10,13 @@ class CustomDropdown extends StatefulWidget {
   final double height;
 
   const CustomDropdown({
-    Key? key,
+    super.key,
     required this.selectedValue,
     required this.items,
     required this.onChanged,
     this.width = 300, // Default width
     this.height = 50, // Default height
-  }) : super(key: key);
+  });
 
   @override
   _CustomDropdownState createState() => _CustomDropdownState();

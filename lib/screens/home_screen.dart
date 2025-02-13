@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:sangeetha_potha_app_flutter/screens/artist_list.dart';
 import 'package:sangeetha_potha_app_flutter/screens/search_page.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_list.dart';
-import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
+import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
 import 'package:sangeetha_potha_app_flutter/widgets/newly_added_songs.dart';
 
 import '../services/manage_favorite.dart';
@@ -21,7 +18,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final Service _service = Service();
+  // Create an instance of DatabaseService
+  final DatabaseService dbService = DatabaseService();
+
   List<Map<String, dynamic>> songs = [];
   List<Map<String, String>> artists = [];
 
@@ -33,18 +32,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchSongData() async {
-    final fetchedSongs = await _service.fetchSongs();
+    // Call fetchSongs on the instance
+    final fetchedSongs = await dbService.fetchSongs();
+
     for (var song in fetchedSongs) {
       final isFav = await FavoritesManager.isFavorite(song['title']);
       song['isFav'] = isFav;
     }
+
     setState(() {
       songs = fetchedSongs;
     });
   }
 
   Future<void> _fetchArtistData() async {
-    final fetchedArtists = await _service.fetchArtists();
+    final fetchedArtists = await dbService.fetchArtists();
     setState(() {
       artists = fetchedArtists.map((artist) {
         return {
@@ -134,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.yellow.withOpacity(0.2),
                                 spreadRadius: 2,
                                 blurRadius: 60,
-                                offset: Offset(0, 50),
+                                offset: const Offset(0, 50),
                               ),
                             ],
                           ),

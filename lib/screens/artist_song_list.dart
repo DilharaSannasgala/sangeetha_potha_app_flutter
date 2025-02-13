@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_screen.dart';
+import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
 import 'package:sangeetha_potha_app_flutter/services/manage_favorite.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import '../widgets/song_tile.dart';
@@ -12,16 +12,15 @@ class ArtistSongList extends StatefulWidget {
   final String artistName;
 
   const ArtistSongList({
-    Key? key,
+    super.key,
     required this.artistName,
-  }) : super(key: key);
+  });
 
   @override
   State<ArtistSongList> createState() => _ArtistSongListState();
 }
 
 class _ArtistSongListState extends State<ArtistSongList> {
-  final Service _service = Service();
   List<Map<String, dynamic>> songs = [];
   String searchQuery = '';
   bool isSearching = false;
@@ -35,7 +34,8 @@ class _ArtistSongListState extends State<ArtistSongList> {
 
   // Fetch songs for the selected artist
   Future<void> _fetchData() async {
-    final fetchedSongs = await _service.fetchSongsByArtist(widget.artistName);
+    final DatabaseService dbService = DatabaseService();
+    final fetchedSongs = await dbService.fetchSongsByArtist(widget.artistName);
     for (var song in fetchedSongs) {
       final isFav = await FavoritesManager.isFavorite(song['title']);
       song['isFav'] = isFav;
@@ -163,7 +163,7 @@ class _ArtistSongListState extends State<ArtistSongList> {
             right: 0,
             bottom: 0,
             child: isLoading
-                ? Center(
+                ? const Center(
               child: CircularProgressIndicator(
                 color: Colors.white,
               ),

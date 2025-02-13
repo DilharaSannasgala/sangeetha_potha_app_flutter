@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
+import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
 import 'package:sangeetha_potha_app_flutter/services/manage_favorite.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import '../utils/app_components.dart';
@@ -16,7 +17,6 @@ class FavList extends StatefulWidget {
 }
 
 class _SongListState extends State<FavList> {
-  final Service _service = Service();
   List<Map<String, dynamic>> songs = [];
   String searchQuery = '';
   bool isSearching = false;
@@ -30,16 +30,23 @@ class _SongListState extends State<FavList> {
 
   // Fetch songs with enriched artist details
   Future<void> _fetchData() async {
-    final fetchedSongs = await _service.fetchSongs();
+    // Create an instance of DatabaseService
+    final DatabaseService dbService = DatabaseService();
+
+    // Call fetchSongs on the instance
+    final fetchedSongs = await dbService.fetchSongs();
+
     for (var song in fetchedSongs) {
       final isFav = await FavoritesManager.isFavorite(song['title']);
       song['isFav'] = isFav;
     }
+
     setState(() {
       songs = fetchedSongs;
       isLoading = false;
     });
   }
+
 
   // Method to toggle search mode
   void startSearch() {

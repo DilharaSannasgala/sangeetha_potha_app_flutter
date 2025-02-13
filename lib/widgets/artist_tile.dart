@@ -1,9 +1,9 @@
-import 'dart:io'; // For File handling
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
 import 'package:sangeetha_potha_app_flutter/utils/app_components.dart';
-
-import '../utils/app_color.dart';
+import '../services/image_service.dart';
 
 class ArtistTile extends StatelessWidget {
   final String avatarUrl;
@@ -11,11 +11,11 @@ class ArtistTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const ArtistTile({
-    Key? key,
+    super.key,
     required this.avatarUrl,
     required this.title,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,21 +64,41 @@ class ArtistTile extends StatelessWidget {
 
   // Helper function to decide whether to use Image.network or Image.file
   Widget _getAvatarWidget() {
-    // Check if the avatarUrl is a valid file path or a URL
     if (avatarUrl.startsWith('http') || avatarUrl.startsWith('https')) {
-      // If it's a URL, use Image.network
-      return Image.network(
-        avatarUrl,
-        width: 70,
-        height: 70,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            AppComponents.fallbackIcon,
-            width: 70,
-            height: 70,
-            fit: BoxFit.cover,
-          );
+      // If it's a URL, download the image and display it
+      return FutureBuilder<String>(
+        future: ImageService().downloadImage(avatarUrl, title),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Image.asset(
+              AppComponents.fallbackIcon,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+            );
+          } else if (snapshot.hasError) {
+            return Image.asset(
+              AppComponents.fallbackIcon,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+            );
+          } else {
+            return Image.file(
+              File(snapshot.data!),
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  AppComponents.fallbackIcon,
+                  width: 70,
+                  height: 70,
+                  fit: BoxFit.cover,
+                );
+              },
+            );
+          }
         },
       );
     } else if (File(avatarUrl).existsSync()) {

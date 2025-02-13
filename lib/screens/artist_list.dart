@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sangeetha_potha_app_flutter/screens/artist_song_list.dart';
-import '../services/service.dart';
+import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
 import '../utils/app_components.dart';
 import '../widgets/artist_tile.dart';
 import 'home_screen.dart';
@@ -14,7 +14,6 @@ class ArtistList extends StatefulWidget {
 }
 
 class _ArtistListState extends State<ArtistList> {
-  final Service _service = Service();
   List<Map<String, String>> artists = [];
   bool isSearching = false;
   String searchQuery = '';
@@ -26,20 +25,28 @@ class _ArtistListState extends State<ArtistList> {
     _fetchData();
   }
 
-  // Fetch artist data from the service
   Future<void> _fetchData() async {
-    final fetchedArtists = await _service.fetchArtists();
-    print('Fetched artists: $fetchedArtists'); // Debug the fetched data
+    try {
+      final DatabaseService dbService = DatabaseService();
+      final fetchedArtists = await dbService.fetchArtists();
+      print('Fetched artists: $fetchedArtists'); // Debug the fetched data
 
-    setState(() {
-      artists = fetchedArtists.map((artist) {
-        return {
-          'avatarUrl': artist['coverArtPath']?.toString() ?? '',
-          'name': artist['name']?.toString() ?? '',
-        };
-      }).toList();
-      isLoading = false; // Set loading to false after data is fetched
-    });
+      setState(() {
+        artists = fetchedArtists.map((artist) {
+          return {
+            'avatarUrl': artist['coverArtPath']?.toString() ?? '',
+            'name': artist['name']?.toString() ?? '',
+          };
+        }).toList();
+        isLoading = false; // Set loading to false after data is fetched
+      });
+    } catch (e) {
+      print('Error in _fetchData: $e');
+      setState(() {
+        isLoading = false;
+        artists = []; // Set empty list in case of error
+      });
+    }
   }
 
   void startSearch() {
@@ -159,7 +166,7 @@ class _ArtistListState extends State<ArtistList> {
             right: 0,
             bottom: 0,
             child: isLoading
-                ? Center(
+                ? const Center(
               child: CircularProgressIndicator(
                 color: Colors.white,
               ),

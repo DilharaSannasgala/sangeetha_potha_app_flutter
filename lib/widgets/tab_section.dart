@@ -149,7 +149,7 @@ class _TabSectionState extends State<TabSection> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     SvgPicture.asset(
                       AppComponents.seeMoreIcon,
                       height: 24,
@@ -213,7 +213,7 @@ class _TabSectionState extends State<TabSection> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     SvgPicture.asset(
                       AppComponents.seeMoreIcon,
                       height: 24,

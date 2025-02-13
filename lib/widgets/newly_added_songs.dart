@@ -11,10 +11,10 @@ class NewlyAddedSongs extends StatelessWidget {
   final VoidCallback onSeeMore;
 
   const NewlyAddedSongs({
-    Key? key,
+    super.key,
     required this.songs,
     required this.onSeeMore,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

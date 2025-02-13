@@ -14,14 +14,14 @@ class SongTile extends StatefulWidget {
   final ValueChanged<bool>? onFavoriteToggle; // Callback to notify favorite state changes
 
   const SongTile({
-    Key? key,
+    super.key,
     required this.avatarUrl,
     required this.title,
     required this.subtitle,
     required this.isFav,
     this.onTap,
     this.onFavoriteToggle,
-  }) : super(key: key);
+  });
 
   @override
   _SongTileState createState() => _SongTileState();
