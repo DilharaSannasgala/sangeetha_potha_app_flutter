@@ -11,68 +11,15 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: Container(
-        color: Colors.black, // Set the drawer background color to black
+        color: Colors.black,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 50),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 30.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SvgPicture.asset(
-                    AppComponents.logo,
-                    height: 80,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      'Sangeetha Potha',
-                      style: GoogleFonts.getFont(
-                        'Poppins',
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildHeader(),
             const SizedBox(height: 16),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _buildTile(
-                      leading: SvgPicture.asset(AppComponents.songIcon, height: 40),
-                      title: 'Songs',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/songs'); // Navigate to Songs screen
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTile(
-                      leading: SvgPicture.asset(AppComponents.artistIcon, height: 40),
-                      title: 'Artists',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/artists'); // Navigate to Artists screen
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTile(
-                      leading: SvgPicture.asset(AppComponents.favIcon, height: 40),
-                      title: 'Favorites',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/favorites'); // Navigate to Favorites screen
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              child: _buildNavigationMenu(context),
             ),
           ],
         ),
@@ -80,14 +27,84 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildTile({required Widget leading, required String title, required VoidCallback onTap}) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 30.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SvgPicture.asset(
+            AppComponents.logo,
+            height: 80,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              'Sangeetha Potha',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationMenu(BuildContext context) {
+    // Define navigation items for better maintainability
+    final navigationItems = [
+      NavigationItem(
+        icon: AppComponents.songIcon,
+        title: 'Songs',
+        route: '/songs',
+      ),
+      NavigationItem(
+        icon: AppComponents.artistIcon,
+        title: 'Artists',
+        route: '/artists',
+      ),
+      NavigationItem(
+        icon: AppComponents.favIcon,
+        title: 'Favorites',
+        route: '/favorites',
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: ListView.separated(
+        padding: EdgeInsets.zero,
+        itemCount: navigationItems.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final item = navigationItems[index];
+          return _buildNavigationTile(
+            context: context,
+            leading: SvgPicture.asset(item.icon, height: 40),
+            title: item.title,
+            route: item.route,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavigationTile({
+    required BuildContext context,
+    required Widget leading,
+    required String title,
+    required String route,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         splashColor: AppColors.accentColorDark.withOpacity(0.2),
         highlightColor: AppColors.accentColorDark.withOpacity(0.1),
-        onTap: onTap,
+        onTap: () => Navigator.pushNamed(context, route),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 18.0),
           child: Row(
@@ -97,8 +114,7 @@ class AppDrawer extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.getFont(
-                    'Poppins',
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -111,4 +127,17 @@ class AppDrawer extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Navigation item model to encapsulate navigation data
+class NavigationItem {
+  final String icon;
+  final String title;
+  final String route;
+
+  const NavigationItem({
+    required this.icon,
+    required this.title,
+    required this.route,
+  });
 }

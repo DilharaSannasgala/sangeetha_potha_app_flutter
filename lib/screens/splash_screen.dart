@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../services/service.dart';
 import '../utils/app_components.dart';
@@ -66,10 +67,10 @@ class SplashScreenState extends State<SplashScreen> {
                 const SizedBox(height: 20),
                 Text(
                   currentAction,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

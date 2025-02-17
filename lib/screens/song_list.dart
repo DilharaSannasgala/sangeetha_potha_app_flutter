@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sangeetha_potha_app_flutter/screens/home_screen.dart';
-import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
-import 'package:sangeetha_potha_app_flutter/services/manage_favorite.dart';
-import 'package:sangeetha_potha_app_flutter/utils/app_color.dart';
+import '../services/database_service.dart';
+import '../services/manage_favorite.dart';
+import '../utils/app_color.dart';
 import '../utils/app_components.dart';
 import '../widgets/song_tile.dart';
+import 'home_screen.dart';
 import 'song_screen.dart';
-import '../services/service.dart';
 
 class SongList extends StatefulWidget {
   const SongList({super.key});
@@ -17,10 +16,11 @@ class SongList extends StatefulWidget {
 }
 
 class _SongListState extends State<SongList> {
-  List<Map<String, dynamic>> songs = [];
-  String searchQuery = '';
-  bool isSearching = false;
-  bool isLoading = true;  // Track loading state
+  final DatabaseService _dbService = DatabaseService();
+  final ValueNotifier<List<Map<String, dynamic>>> _songs = ValueNotifier([]);
+  final ValueNotifier<bool> _isLoading = ValueNotifier(true);
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -28,66 +28,92 @@ class _SongListState extends State<SongList> {
     _fetchData();
   }
 
+  @override
+  void dispose() {
+    _songs.dispose();
+    _isLoading.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchData() async {
-    // Create an instance of DatabaseService
-    final DatabaseService dbService = DatabaseService();
-
-    // Call fetchSongs on the instance
-    final fetchedSongs = await dbService.fetchSongs();
-
-    for (var song in fetchedSongs) {
-      final isFav = await FavoritesManager.isFavorite(song['title']);
-      song['isFav'] = isFav;
+    try {
+      final fetchedSongs = await _dbService.fetchSongs();
+      final songsWithFavorites = await _processFavorites(fetchedSongs);
+      _songs.value = songsWithFavorites;
+    } catch (e) {
+      debugPrint('Error fetching songs: $e');
+      // Handle error appropriately
+    } finally {
+      _isLoading.value = false;
     }
-
-    setState(() {
-      songs = fetchedSongs;
-      isLoading = false;
-    });
   }
 
-
-  // Method to toggle search mode
-  void startSearch() {
-    setState(() {
-      isSearching = true;
-    });
-  }
-
-  // Method to close search
-  void stopSearch() {
-    setState(() {
-      isSearching = false;
-      searchQuery = '';
-    });
-  }
-
-  // Method to filter songs based on the search query
-  List<Map<String, dynamic>> getFilteredSongs() {
-    if (searchQuery.isEmpty) {
-      return songs;
+  Future<List<Map<String, dynamic>>> _processFavorites(List<Map<String, dynamic>> songs) async {
+    try {
+      // Get all favorites at once to reduce SharedPreferences calls
+      final allFavorites = await FavoritesManager.getAllFavorites();
+      
+      return songs.map((song) {
+        final isFav = allFavorites.contains(song['title']);
+        return {...song, 'isFav': isFav};
+      }).toList();
+    } catch (e) {
+      debugPrint('Error processing favorites: $e');
+      return songs.map((song) => {...song, 'isFav': false}).toList();
     }
+  }
+
+  List<Map<String, dynamic>> _getFilteredSongs(
+      String query, List<Map<String, dynamic>> songs) {
+    if (query.isEmpty) return songs;
+
+    final queryLower = query.toLowerCase();
     return songs.where((song) {
-      final titleLower = song['title']?.toLowerCase() ?? '';
-      final artistNameLower = song['artistName']?.toLowerCase() ?? '';
-      final queryLower = searchQuery.toLowerCase();
-      return titleLower.contains(queryLower) || artistNameLower.contains(queryLower);
+      final titleLower = song['title']?.toString().toLowerCase() ?? '';
+      final artistNameLower =
+          song['artistName']?.toString().toLowerCase() ?? '';
+      return titleLower.contains(queryLower) ||
+          artistNameLower.contains(queryLower);
     }).toList();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      if (_isSearching) {
+        _searchController.clear();
+      }
+      _isSearching = !_isSearching;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredSongs = getFilteredSongs();
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Color
-          Container(
-            color: Colors.black,
+          _buildBackground(),
+          Column(
+            children: [
+              _buildAppBar(),
+              Expanded(
+                child: _buildSongList(),
+              ),
+            ],
           ),
-          ColorFiltered(
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: Colors.black),
+        Positioned.fill(
+          child: ColorFiltered(
             colorFilter: ColorFilter.mode(
               Colors.black.withOpacity(0.23),
               BlendMode.dstATop,
@@ -97,89 +123,91 @@ class _SongListState extends State<SongList> {
               fit: BoxFit.cover,
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              title: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                child: isSearching
-                    ? TextField(
-                  key: const ValueKey('searchField'),
-                  autofocus: true,
-                  style: GoogleFonts.getFont(
-                    'Poppins',
-                    color: Colors.white,
-                    fontSize: 20,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: 'Search Songs...',
-                    hintStyle: TextStyle(color: Colors.white54),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (query) {
-                    setState(() {
-                      searchQuery = query;
-                    });
-                  },
-                )
-                    : Text(
-                  'All Songs',
-                  key: const ValueKey('titleText'),
-                  style: GoogleFonts.getFont(
-                    'Poppins',
-                    color: Colors.white,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _isSearching
+            ? TextField(
+                key: const ValueKey('searchField'),
+                controller: _searchController,
+                autofocus: true,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search Songs...',
+                  hintStyle: GoogleFonts.poppins(color: Colors.white54),
+                  border: InputBorder.none,
+                ),
+                onChanged: (query) => setState(() {}),
+              )
+            : Text(
+                'All Songs',
+                key: const ValueKey('titleText'),
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
                 ),
               ),
-              leading: IconButton(
-                icon: isSearching
-                    ? const Icon(Icons.close, color: Colors.white)
-                    : const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () {
-                  if (isSearching) {
-                    stopSearch();
-                  } else {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ),
-                          (route) => false,
-                    );
-                  }
-                },
-              ),
-              actions: [
-                if (!isSearching)
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white),
-                    onPressed: startSearch,
-                  ),
-              ],
-            ),
+      ),
+      leading: IconButton(
+        icon: Icon(
+          _isSearching ? Icons.close : Icons.arrow_back,
+          color: Colors.white,
+        ),
+        onPressed: () {
+          if (_isSearching) {
+            _toggleSearch();
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+            );
+          }
+        },
+      ),
+      actions: [
+        if (!_isSearching)
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: _toggleSearch,
           ),
-          Positioned(
-            top: 70,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: isLoading
-                ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentColor),
-              ),
-            )
-                : filteredSongs.isEmpty
-                ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
+      ],
+    );
+  }
+
+  Widget _buildSongList() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isLoading,
+      builder: (context, isLoading, _) {
+        if (isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentColor),
+            ),
+          );
+        }
+
+        return ValueListenableBuilder<List<Map<String, dynamic>>>(
+          valueListenable: _songs,
+          builder: (context, songs, _) {
+            final filteredSongs =
+                _getFilteredSongs(_searchController.text, songs);
+
+            if (filteredSongs.isEmpty) {
+              return Center(
                 child: Text(
                   'No songs found.',
                   style: GoogleFonts.poppins(
@@ -187,51 +215,92 @@ class _SongListState extends State<SongList> {
                     fontSize: 20,
                   ),
                 ),
-              ),
-            )
-                : ListView.builder(
+              );
+            }
+
+            return ListView.builder(
               itemCount: filteredSongs.length,
+              padding: const EdgeInsets.only(top: 16),
               itemBuilder: (context, index) {
                 final song = filteredSongs[index];
-
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    splashColor: AppColors.accentColorDark.withOpacity(0.2),
-                    highlightColor: AppColors.accentColorDark.withOpacity(0.1),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SongScreen(
-                            avatarUrl: song['coverArtPath'] ?? '',
-                            title: song['title'] ?? '',
-                            subtitle: song['artistName'] ?? 'Unknown Artist',
-                            lyrics: song['lyrics'] ?? '',
-                          ),
-                        ),
-                      );
-                    },
-                    child: SongTile(
-                      avatarUrl: song['coverArtPath'] ?? '',
-                      title: song['title'] ?? '',
-                      subtitle: song['artistName'] ?? 'Unknown Artist',
-                      isFav: song['isFav'] ?? false,
-                      onFavoriteToggle: (isFavorited) async {
-                        await FavoritesManager.setFavorite(song['title'], isFavorited);
-                        setState(() {
-                          songs[index]['isFav'] = isFavorited;
-                        });
-                      },
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      splashColor: AppColors.accentColorDark.withOpacity(0.2),
+                      highlightColor: AppColors.accentColorDark.withOpacity(0.1),
+                      onTap: () => _navigateToSongScreen(context, song),
+                      child: SongTile(
+                        key: ValueKey(song['title']),
+                        avatarUrl: song['coverArtPath'] ?? '',
+                        title: song['title'] ?? '',
+                        subtitle: song['artistName'] ?? 'Unknown Artist',
+                        isFav: song['isFav'] ?? false,
+                        onFavoriteToggle: (isFavorited) => _updateFavorite(index, isFavorited),
+                      ),
                     ),
                   ),
                 );
               },
-            ),
-          ),
-        ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _navigateToSongScreen(BuildContext context, Map<String, dynamic> song) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SongScreen(
+          avatarUrl: song['coverArtPath'] ?? '',
+          title: song['title'] ?? '',
+          subtitle: song['artistName'] ?? 'Unknown Artist',
+          lyrics: song['lyrics'] ?? '',
+        ),
       ),
     );
+  }
+
+  Future<void> _updateFavorite(int index, bool isFavorited) async {
+    try {
+      final song = _songs.value[index];
+      final success =
+          await FavoritesManager.setFavorite(song['title'], isFavorited);
+
+      if (success) {
+        final List<Map<String, dynamic>> updatedSongs = List.from(_songs.value);
+        updatedSongs[index] = {...updatedSongs[index], 'isFav': isFavorited};
+        _songs.value = updatedSongs;
+      } else {
+        // Handle failure - revert UI if needed
+        setState(() {
+          // Revert the favorite toggle in the UI
+          final List<Map<String, dynamic>> revertedSongs =
+              List.from(_songs.value);
+          revertedSongs[index] = {
+            ...revertedSongs[index],
+            'isFav': !isFavorited
+          };
+          _songs.value = revertedSongs;
+        });
+
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update favorite status'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _updateFavorite: $e');
+      // Handle error appropriately
+    }
   }
 }

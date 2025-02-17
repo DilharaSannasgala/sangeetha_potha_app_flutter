@@ -3,9 +3,8 @@ import 'package:sangeetha_potha_app_flutter/screens/search_page.dart';
 import 'package:sangeetha_potha_app_flutter/screens/song_list.dart';
 import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
 import 'package:sangeetha_potha_app_flutter/widgets/newly_added_songs.dart';
-
+import 'package:sangeetha_potha_app_flutter/widgets/shimmer_loading.dart';
 import '../services/manage_favorite.dart';
-import '../services/service.dart';
 import '../utils/app_components.dart';
 import 'app_drawer.dart';
 import '../widgets/tab_section.dart';
@@ -18,66 +17,134 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Create an instance of DatabaseService
-  final DatabaseService dbService = DatabaseService();
+  final DatabaseService _dbService = DatabaseService();
+  bool _isLoading = true;
 
-  List<Map<String, dynamic>> songs = [];
-  List<Map<String, String>> artists = [];
+  // Use ValueNotifier for reactive state management
+  final ValueNotifier<List<Map<String, dynamic>>> _songs = ValueNotifier([]);
+  final ValueNotifier<List<Map<String, String>>> _artists = ValueNotifier([]);
 
   @override
   void initState() {
     super.initState();
-    _fetchSongData();
-    _fetchArtistData();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      await Future.wait([
+        _fetchSongData(),
+        _fetchArtistData(),
+      ]);
+    } catch (e) {
+      debugPrint('Error loading data: $e');
+      // Consider showing an error message to the user
+    }
+    
+    setState(() => _isLoading = false);
   }
 
   Future<void> _fetchSongData() async {
-    // Call fetchSongs on the instance
-    final fetchedSongs = await dbService.fetchSongs();
-
-    for (var song in fetchedSongs) {
-      final isFav = await FavoritesManager.isFavorite(song['title']);
-      song['isFav'] = isFav;
+    try {
+      final fetchedSongs = await _dbService.fetchSongs();
+      _songs.value = await _processFavorites(fetchedSongs);
+    } catch (e) {
+      debugPrint('Error fetching songs: $e');
+      // Handle error appropriately
     }
+  }
 
-    setState(() {
-      songs = fetchedSongs;
-    });
+  Future<List<Map<String, dynamic>>> _processFavorites(
+      List<Map<String, dynamic>> songs) async {
+    return Future.wait(
+      songs.map((song) async {
+        final isFav = await FavoritesManager.isFavorite(song['title']);
+        return {...song, 'isFav': isFav};
+      }),
+    );
   }
 
   Future<void> _fetchArtistData() async {
-    final fetchedArtists = await dbService.fetchArtists();
-    setState(() {
-      artists = fetchedArtists.map((artist) {
-        return {
-          'avatarUrl': artist['coverArtPath']?.toString() ?? '',
-          'name': artist['name']?.toString() ?? '',
-        };
-      }).toList();
-    });
+    try {
+      final fetchedArtists = await _dbService.fetchArtists();
+      _artists.value = _processArtists(fetchedArtists);
+    } catch (e) {
+      debugPrint('Error fetching artists: $e');
+      // Handle error appropriately
+    }
+  }
+
+  List<Map<String, String>> _processArtists(
+      List<Map<String, dynamic>> artists) {
+    return artists
+        .map((artist) => {
+              'avatarUrl': artist['coverArtPath']?.toString() ?? '',
+              'name': artist['name']?.toString() ?? '',
+            })
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _songs.dispose();
+    _artists.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final recentSongs = List<Map<String, dynamic>>.from(songs)
-      ..sort((a, b) => (b['createdAt'] ?? 0).compareTo(a['createdAt'] ?? 0));
-    final topRecentSongs = recentSongs.take(10).toList();
-
-    final sortedSongs = List<Map<String, dynamic>>.from(songs)
-      ..sort((a, b) => a['title'].compareTo(b['title']));
-
-    final topArtists = artists.take(10).toList();
-
     return Scaffold(
       drawer: const AppDrawer(),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Color
-          Container(
-            color: Colors.black,
+      body: _isLoading
+        ? const ShimmerLoading()
+        : _HomeBody(
+            songs: _songs,
+            artists: _artists,
           ),
-          ColorFiltered(
+    );
+  }
+}
+
+// Separate widget for the body to improve maintainability
+class _HomeBody extends StatelessWidget {
+  final ValueNotifier<List<Map<String, dynamic>>> songs;
+  final ValueNotifier<List<Map<String, String>>> artists;
+
+  const _HomeBody({
+    required this.songs,
+    required this.artists,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Determine if the device is in landscape mode
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _buildBackground(),
+        Column(
+          children: [
+            _buildAppBar(context),
+            Expanded(
+              child: _buildContent(context, isLandscape),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: Colors.black),
+        Positioned.fill(
+          child: ColorFiltered(
             colorFilter: ColorFilter.mode(
               Colors.black.withOpacity(0.23),
               BlendMode.dstATop,
@@ -87,92 +154,120 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          Column(
-            children: [
-              // Fixed AppBar
-              AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                title: null,
-                leading: Builder(
-                  builder: (context) {
-                    return IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      onPressed: () {
-                        Scaffold.of(context).openDrawer();
-                      },
-                    );
-                  },
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SearchPage(
-                            songs: songs,
-                            artists: artists,
-                          ),
-                        ),
-                      );
-                    },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: null,
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.white),
+          onPressed: () => _navigateToSearch(context),
+        ),
+      ],
+    );
+  }
+
+  void _navigateToSearch(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchPage(
+          songs: songs.value,
+          artists: artists.value,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, bool isLandscape) {
+    return ValueListenableBuilder(
+      valueListenable: songs,
+      builder: (context, songsList, _) {
+        final recentSongs = _getRecentSongs(songsList);
+        final sortedSongs = _getSortedSongs(songsList);
+
+        return ValueListenableBuilder(
+          valueListenable: artists,
+          builder: (context, artistsList, _) {
+            final topArtists = artistsList.take(10).toList();
+
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Only show banner in portrait mode
+                  if (!isLandscape) ...[
+                    _buildBanner(),
+                    const SizedBox(height: 24),
+                  ],
+                  NewlyAddedSongs(
+                    songs: recentSongs,
+                    onSeeMore: () => _navigateToSongList(context),
+                  ),
+                  const SizedBox(height: 16),
+                  TabSection(
+                    sortedSongs: sortedSongs,
+                    topArtists: topArtists,
                   ),
                 ],
               ),
-              // Scrollable Content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // Banner
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.yellow.withOpacity(0.2),
-                                spreadRadius: 2,
-                                blurRadius: 60,
-                                offset: const Offset(0, 50),
-                              ),
-                            ],
-                          ),
-                          child: Image.asset(
-                            AppComponents.banner,
-                            fit: BoxFit.fill,
-                            width: double.infinity,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Newly Added Songs Section
-                      NewlyAddedSongs(
-                        songs: topRecentSongs,
-                        onSeeMore: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SongList(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // Reusable Tab Section for Songs and Artists
-                      TabSection(
-                        sortedSongs: sortedSongs,
-                        topArtists: topArtists,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.yellow.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 60,
+              offset: const Offset(0, 50),
+            ),
+          ],
+        ),
+        child: Image.asset(
+          AppComponents.banner,
+          fit: BoxFit.fill,
+          width: double.infinity,
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getRecentSongs(List<Map<String, dynamic>> songs) {
+    final recentSongs = List<Map<String, dynamic>>.from(songs)
+      ..sort((a, b) => (b['createdAt'] ?? 0).compareTo(a['createdAt'] ?? 0));
+    return recentSongs.take(10).toList();
+  }
+
+  List<Map<String, dynamic>> _getSortedSongs(List<Map<String, dynamic>> songs) {
+    return List<Map<String, dynamic>>.from(songs)
+      ..sort((a, b) => a['title'].compareTo(b['title']));
+  }
+
+  void _navigateToSongList(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SongList(),
       ),
     );
   }

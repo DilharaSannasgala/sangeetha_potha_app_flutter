@@ -1,7 +1,10 @@
+// artist_list.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sangeetha_potha_app_flutter/model/artist_model.dart';
 import 'package:sangeetha_potha_app_flutter/screens/artist_song_list.dart';
 import 'package:sangeetha_potha_app_flutter/services/database_service.dart';
+import '../utils/app_color.dart';
 import '../utils/app_components.dart';
 import '../widgets/artist_tile.dart';
 import 'home_screen.dart';
@@ -14,10 +17,11 @@ class ArtistList extends StatefulWidget {
 }
 
 class _ArtistListState extends State<ArtistList> {
-  List<Map<String, String>> artists = [];
-  bool isSearching = false;
-  String searchQuery = '';
-  bool isLoading = true; // Track loading state
+  final DatabaseService _dbService = DatabaseService();
+  final ValueNotifier<List<ArtistModel>> _artists = ValueNotifier([]);
+  final ValueNotifier<bool> _isLoading = ValueNotifier(true);
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -25,64 +29,76 @@ class _ArtistListState extends State<ArtistList> {
     _fetchData();
   }
 
+  @override
+  void dispose() {
+    _artists.dispose();
+    _isLoading.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchData() async {
     try {
-      final DatabaseService dbService = DatabaseService();
-      final fetchedArtists = await dbService.fetchArtists();
-      print('Fetched artists: $fetchedArtists'); // Debug the fetched data
+      final fetchedArtists = await _dbService.fetchArtists();
+      if (!mounted) return;
 
-      setState(() {
-        artists = fetchedArtists.map((artist) {
-          return {
-            'avatarUrl': artist['coverArtPath']?.toString() ?? '',
-            'name': artist['name']?.toString() ?? '',
-          };
-        }).toList();
-        isLoading = false; // Set loading to false after data is fetched
-      });
+      _artists.value = fetchedArtists.map((artist) => ArtistModel(
+        avatarUrl: artist['coverArtPath']?.toString() ?? '',
+        name: artist['name']?.toString() ?? '',
+      )).toList();
     } catch (e) {
-      print('Error in _fetchData: $e');
-      setState(() {
-        isLoading = false;
-        artists = []; // Set empty list in case of error
-      });
+      debugPrint('Error fetching artists: $e');
+      // Handle error appropriately
+    } finally {
+      _isLoading.value = false;
     }
   }
 
-  void startSearch() {
-    setState(() {
-      isSearching = true;
-    });
+  List<ArtistModel> _getFilteredArtists(String query, List<ArtistModel> artists) {
+    if (query.isEmpty) return artists;
+    
+    final queryLower = query.toLowerCase();
+    return artists.where((artist) => 
+      artist.name.toLowerCase().contains(queryLower)
+    ).toList();
   }
 
-  void stopSearch() {
+  void _toggleSearch() {
     setState(() {
-      isSearching = false;
-      searchQuery = '';
+      if (_isSearching) {
+        _searchController.clear();
+      }
+      _isSearching = !_isSearching;
     });
-  }
-
-  List<Map<String, String>> getFilteredArtists() {
-    if (searchQuery.isEmpty) {
-      return artists;
-    }
-    return artists.where((artist) {
-      final nameLower = (artist['name'] ?? '').toLowerCase();
-      final queryLower = searchQuery.toLowerCase();
-      return nameLower.contains(queryLower);
-    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredArtists = getFilteredArtists();
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Container(color: Colors.black),
-          ColorFiltered(
+          _buildBackground(),
+          Column(
+            children: [
+              _buildAppBar(),
+              Expanded(
+                child: _buildArtistList(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: Colors.black),
+        Positioned.fill(
+          child: ColorFiltered(
             colorFilter: ColorFilter.mode(
               Colors.black.withOpacity(0.23),
               BlendMode.dstATop,
@@ -92,123 +108,134 @@ class _ArtistListState extends State<ArtistList> {
               fit: BoxFit.cover,
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              title: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                child: isSearching
-                    ? TextField(
-                  key: const ValueKey('searchField'),
-                  autofocus: true,
-                  style: GoogleFonts.getFont(
-                    'Poppins',
-                    color: Colors.white,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _isSearching
+            ? TextField(
+                key: const ValueKey('searchField'),
+                controller: _searchController,
+                autofocus: true,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search Artists...',
+                  hintStyle: GoogleFonts.poppins(color: Colors.white54),
+                  border: InputBorder.none,
+                ),
+                onChanged: (query) => setState(() {}),
+              )
+            : Text(
+                'All Artists',
+                key: const ValueKey('titleText'),
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+      ),
+      leading: IconButton(
+        icon: Icon(
+          _isSearching ? Icons.close : Icons.arrow_back,
+          color: Colors.white,
+        ),
+        onPressed: () {
+          if (_isSearching) {
+            _toggleSearch();
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+            );
+          }
+        },
+      ),
+      actions: [
+        if (!_isSearching)
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: _toggleSearch,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildArtistList() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isLoading,
+      builder: (context, isLoading, _) {
+        if (isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentColor),
+            ),
+          );
+        }
+
+        return ValueListenableBuilder<List<ArtistModel>>(
+          valueListenable: _artists,
+          builder: (context, artists, _) {
+            final filteredArtists = _getFilteredArtists(_searchController.text, artists);
+
+            if (filteredArtists.isEmpty) {
+              return Center(
+                child: Text(
+                  'No artists found.',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
                     fontSize: 20,
                   ),
-                  decoration: const InputDecoration(
-                    hintText: 'Search artists...',
-                    hintStyle: TextStyle(color: Colors.white54),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (query) {
-                    setState(() {
-                      searchQuery = query;
-                    });
-                  },
-                )
-                    : Text(
-                  'All Artists',
-                  key: const ValueKey('titleText'),
-                  style: GoogleFonts.getFont(
-                    'Poppins',
-                    color: Colors.white,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
                 ),
-              ),
-              leading: IconButton(
-                icon: isSearching
-                    ? const Icon(Icons.close, color: Colors.white)
-                    : const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () {
-                  if (isSearching) {
-                    stopSearch();
-                  } else {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ),
-                          (route) => false,
-                    );
-                  }
-                },
-              ),
-              actions: [
-                if (!isSearching)
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white),
-                    onPressed: startSearch,
-                  ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + kToolbarHeight,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: isLoading
-                ? const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-              ),
-            ) // Show loading spinner while data is loading
-                : filteredArtists.isEmpty
-                ? Center(
-              child: Text(
-                'No artists found.',
-                style: GoogleFonts.getFont(
-                  'Poppins',
-                  color: Colors.white,
-                  fontSize: 18,
-                ),
-              ),
-            ) // Show empty message when no artists are found
-                : ListView.builder(
+              );
+            }
+
+            return ListView.builder(
               itemCount: filteredArtists.length,
+              padding: const EdgeInsets.only(top: 16),
               itemBuilder: (context, index) {
-                return ArtistTile(
-                  avatarUrl: filteredArtists[index]['avatarUrl']!.isEmpty
-                      ? 'assets/fallback_avatar.png' // Fallback image path
-                      : filteredArtists[index]['avatarUrl']!,
-                  title: filteredArtists[index]['name']!.isEmpty
-                      ? 'Unknown Artist'
-                      : filteredArtists[index]['name']!,
-                  onTap: () {
-                    // Navigate to SongsByArtistScreen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ArtistSongList(
-                          artistName: filteredArtists[index]['name']!,
-                        ),
-                      ),
-                    );
-                  },
+                final artist = filteredArtists[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ArtistTile(
+                    key: ValueKey(artist.name),
+                    avatarUrl: artist.avatarUrl.isEmpty
+                        ? 'assets/fallback_avatar.png'
+                        : artist.avatarUrl,
+                    title: artist.name.isEmpty ? 'Unknown Artist' : artist.name,
+                    onTap: () => _navigateToArtistSongs(artist.name),
+                  ),
                 );
               },
-            ),
-          ),
-        ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _navigateToArtistSongs(String artistName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ArtistSongList(artistName: artistName),
       ),
     );
   }
 }
+
