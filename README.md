@@ -62,6 +62,23 @@ flutter pub get
 flutter run
 ```
 
+## Firebase Setup
+
+1. Install FlutterFire CLI
+```bash
+dart pub global activate flutterfire_cli
+```
+
+2. Configure Firebase for your app
+```bash
+flutterfire configure
+```
+
+This will:
+- Create necessary Firebase config files
+- Set up platform-specific configurations
+- Generate Firebase options
+
 ## 🔒 Environment Variables
 
 Required environment variables in your `.env` file:
