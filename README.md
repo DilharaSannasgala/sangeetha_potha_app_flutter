@@ -4,6 +4,10 @@ A song lyrics library application built with Flutter and Firebase.
 
 ![Sangeetha Potha App Screenshot](assets/images/sangeethapotha_app_banner.png)
 
+## 📱 Download
+
+[Download Android APK](https://mega.nz/file/OqBXAShI#5fwRs5JOf27pQ-yKw2EPZonF5NERSoODjnGWtgNLsqA)
+
 ## 📱 Features
 
 - Song lyrics library
